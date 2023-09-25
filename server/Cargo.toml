@@ -1,0 +1,37 @@
+[package]
+authors = ["g0h4n <g0h4n_0@protonmail.com>"]
+name = "server"
+description = "REC2 (Rusty External Comand and Control Server)"
+keywords = ["c2", "pentest", "social", "server"]
+repository = "https://github.com/g0h4n/SC2"
+homepage = "https://github.com/g0h4n/SC2"
+documentation = "https://docs.rs/sc2/"
+version = "0.0.1"
+edition = "2018"
+license = "MIT"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+rustyline = "12"
+clap = "4.0"
+log = "0.4"
+env_logger = "0.10"
+colored = "2"
+shellwords = "1.1.0"
+
+# Crypto
+hex = "0.4"
+rand = "0.8.5"
+aes = "0.8.1"
+cbc = {version = "0.1.2", features = ["std"]}
+pbkdf2 = "0.11.0"
+regex = "1.6.0"
+random-string = "1.0"
+md5 = "0.7"
+
+# Modules
+megalodon = { version = "0.6" }
+virustotal3 = { version = "3.0.1" }

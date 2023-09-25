@@ -1,0 +1,10 @@
+implants/*/target
+implants/*/Cargo.lock
+server/target
+server/Cargo.lock
+.vscode/
+*.exe
+history.txt
+/server_*
+/c2server*
+/rec2*
