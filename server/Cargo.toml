@@ -2,10 +2,9 @@
 authors = ["g0h4n <g0h4n_0@protonmail.com>"]
 name = "server"
 description = "REC2 (Rusty External Comand and Control Server)"
-keywords = ["c2", "pentest", "social", "server"]
-repository = "https://github.com/g0h4n/SC2"
-homepage = "https://github.com/g0h4n/SC2"
-documentation = "https://docs.rs/sc2/"
+keywords = ["c2", "pentest", "social", "server", "redteam"]
+repository = "https://github.com/g0h4n/REC2"
+homepage = "https://github.com/g0h4n/REC2"
 version = "0.0.1"
 edition = "2018"
 license = "MIT"

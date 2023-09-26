@@ -1,5 +1,5 @@
 //! 
-//! SC2 (Social C2 Server)
+//! REC2 (Rusty External C2 Server)
 //! 
 pub mod utils;
 pub mod modules;

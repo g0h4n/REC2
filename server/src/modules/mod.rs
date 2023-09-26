@@ -1,4 +1,4 @@
-//! Social network for SC2 server
+//! Social network for REC2 server
 #[doc(inline)]
 pub use rec2mastodon::*;
 pub use rec2virustotal::*;

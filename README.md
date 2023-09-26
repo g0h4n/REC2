@@ -103,7 +103,7 @@ usage: make c2server_macos
 usage: make c2server_arm_musl
 usage: make c2server_armv7
 
-Virustotal implant:
+VirusTotal implant:
 usage: make virustotal_debug
 usage: make virustotal_release
 usage: make virustotal_windows

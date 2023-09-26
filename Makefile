@@ -278,7 +278,7 @@ help:
 	@echo "usage: make c2server_arm_musl"
 	@echo "usage: make c2server_armv7"
 	@echo ""
-	@echo "Virustotal implant:"
+	@echo "VirusTotal implant:"
 	@echo "usage: make virustotal_debug"
 	@echo "usage: make virustotal_release"
 	@echo "usage: make virustotal_windows"

@@ -216,6 +216,10 @@ impl Shell {
     ) -> Result<()> {
 
         let mut rl = DefaultEditor::new()?;
+        // Load previous history.txt
+        if rl.load_history("history.txt").is_err() {
+            trace!("No previous history.");
+        }
 
         // Prepare Hashmap with sessions and jobs here
         let mut sessions: Vec<Session> = Vec::new();
@@ -270,6 +274,7 @@ impl Shell {
         jobs: &mut Vec<Job>,
     ) -> Result<()> {
         // Rustyline terminal
+        // Add new history line
         let _ = rl.add_history_entry(line.as_str());
         #[warn(unused_must_use)]
         let result = rl.append_history("history.txt");

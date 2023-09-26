@@ -2,10 +2,9 @@
 authors = ["g0h4n <g0h4n_0@protonmail.com>"]
 name = "rec2"
 description = "REC2 (Rusty External C2, Mastodon Implant)"
-keywords = ["implant", "pentest", "social", "client"]
+keywords = ["implant", "pentest", "social", "client", "redteam"]
 repository = "https://github.com/g0h4n/REC2"
 homepage = "https://github.com/g0h4n/REC2"
-documentation = "https://docs.rs/REC2/"
 version = "0.0.1"
 edition = "2018"
 license = "MIT"

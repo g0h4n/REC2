@@ -1,4 +1,4 @@
-//! Utils for SC2 client
+//! Utils for REC2 client
 #[doc(inline)]
 pub use common::*;
 #[doc(inline)]
