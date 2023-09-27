@@ -345,7 +345,8 @@ cargo doc --open --no-deps --manifest-path server/Cargo.toml
     - [x] JOBS
     - [ ] Asynchrone jobs status check function
     - [ ] Asynchrone sessions status check function
-    - [ ] Select current sessions with "**sessions -i 1**" to attach session number 1
+    - [x] Select current sessions with `sessions -i 1`` to attach session number 1 [09/28/2023]
+    - [x] Add `background` command [09/28/2023]
 - SOCIAL NETWORK
     - [x] MASTODON: [https://docs.rs/megalodon/latest/megalodon/](https://docs.rs/megalodon/latest/megalodon/)
     - [x] VIRUSTOTAL: [https://docs.rs/virustotal3/latest/virustotal3/](https://docs.rs/virustotal3/latest/virustotal3/)

