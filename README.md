@@ -36,7 +36,7 @@
 
 # :label: Description
 
-**R**usty **E**xternal **C**ommand and **C**ontrol client implant and server c2 written in Rust using **Mastodon** and **VirusTotal** API.
+`REC2`, or **R**usty **E**xternal **C**ommand and **C**ontrol, is a versatile Command and Control (C2) tool developed in the Rust programming language. It provides a discreet and effective means to manage remote implants (clients) on macOS, Linux, and Windows systems. REC2 utilizes third-party APIs like `VirusTotal` or `Mastodon` to transmit encrypted messages using AES between the server and implants, allowing attackers to operate stealthily through these external channels. Implants can monitor pending jobs, retrieve, decrypt, execute tasks on the target system, and securely transmit results back via the same APIs.  Using these APIs as intermediaries adds an extra layer of anonymization, reducing the ease of tracing back to the attacker.
 
 <p align="center">
 <img src="img/schema_rec2.png" alt="schema" width="100%" />
@@ -345,7 +345,7 @@ cargo doc --open --no-deps --manifest-path server/Cargo.toml
     - [x] JOBS
     - [ ] Asynchrone jobs status check function
     - [ ] Asynchrone sessions status check function
-    - [x] Select current sessions with `sessions -i 1`` to attach session number 1 [09/28/2023]
+    - [x] Select current sessions with `sessions -i 1` to attach session number 1 [09/28/2023]
     - [x] Add `background` command [09/28/2023]
 - SOCIAL NETWORK
     - [x] MASTODON: [https://docs.rs/megalodon/latest/megalodon/](https://docs.rs/megalodon/latest/megalodon/)
