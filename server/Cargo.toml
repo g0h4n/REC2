@@ -5,7 +5,7 @@ description = "REC2 (Rusty External Comand and Control Server)"
 keywords = ["c2", "pentest", "social", "server", "redteam"]
 repository = "https://github.com/g0h4n/REC2"
 homepage = "https://github.com/g0h4n/REC2"
-version = "0.0.2"
+version = "0.1.0"
 edition = "2018"
 license = "MIT"
 readme = "README.md"
@@ -33,4 +33,4 @@ md5 = "0.7"
 
 # Modules
 megalodon = { version = "0.6" }
-virustotal3 = { version = "3.0.1" }
+virustotal3 = { version = "3.0.2" }

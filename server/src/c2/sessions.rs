@@ -46,8 +46,8 @@ pub async fn get_sessions(default_args: &Options, sessions: &mut Vec<Session>) {
             let (_url,vtype,resource_id) = rec2virustotal::parse_virustotal_url(&default_args.url);
             trace!("before virustotal_get_comments() function");
             trace!("       &default_args.token: {:?}",&default_args.token);
-            trace!("       &resource_id: {:?}",&default_args.token);
-            trace!("       &vtype: {:?}",&default_args.token);
+            trace!("       &resource_id: {:?}",&resource_id);
+            trace!("       &vtype: {:?}",&vtype);
             trace!("       SESS: {:?}",&"SESS:".to_string());
 
             let (result_spoiler,result_content,_post_id) = rec2virustotal::virustotal_get_comments(

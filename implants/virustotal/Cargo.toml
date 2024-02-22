@@ -5,7 +5,7 @@ description = "REC2 (Rusty External C2, VirusTotal Implant)"
 keywords = ["implant", "pentest", "social", "client", "redteam"]
 repository = "https://github.com/g0h4n/REC2"
 homepage = "https://github.com/g0h4n/REC2"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2018"
 license = "MIT"
 readme = "README.md"
@@ -31,7 +31,7 @@ random-string = "1.0"
 md5 = "0.7"
 
 # Modules
-virustotal3 = { version = "3.0.1" }
+virustotal3 = { version = "3.0.2" }
 
 [profile.release]
 opt-level = "z"

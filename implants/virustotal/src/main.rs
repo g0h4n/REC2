@@ -30,9 +30,9 @@ async fn main() {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // TO CHANGE manually!
     // VIRUSTOTAL TOKEN
-    let token = lc!("a78983b009b688a82458abac952516db57dc7eb3118a35cc737dde29c7b87ec4").to_owned();
+    let token = lc!("a85683b009aaaaa81049acac952516db57aaaaabefab35cc737dc219c7b87ec5").to_owned();
     // VIRUSTOTAL FULL URL
-    let full_url = lc!("https://www.virustotal.com/gui/file/99ff0b679081cdca00eb27c5be5fd9428f1a7cf781cc438b937cf8baf8551c4d").to_owned();
+    let full_url = lc!("https://www.virustotal.com/gui/file/ef22bb40f9439587396c9dc9c2a8a938fa2485f22c533479c95264bda61704d4?nocache=1").to_owned();
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

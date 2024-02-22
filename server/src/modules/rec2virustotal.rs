@@ -48,35 +48,39 @@ pub async fn virustotal_get_comments(
 ) -> (Vec<String>,Vec<String>,Vec<String>) {
 
     trace!("in virustotal_get_comments() function");
-
     let vt = VtClient::new(access_token);
-    let result = vt.get_comment(resource_id, vtype).await;
 
     // Result
     let mut result_spoiler: Vec<String> = Vec::new();
     let mut result_content: Vec<String> = Vec::new();
     let mut post_id: Vec<String> = Vec::new();
 
-    if result.data.len() >= 1 {
-        // Comment by comment
-        for c in result.data {
-
-            if c.attributes.text.contains(&filter) {
-                let split = c.attributes.text.split("\n");
-                let collection = split.collect::<Vec<&str>>();
-                let re = Regex::new(r"[0-9a-f]+").unwrap();
-                for hexa in re.captures_iter(&collection[1])
-                {
-                    trace!("Getting comment in resource: {}",resource_id);
-                    result_spoiler.push(collection[0].to_owned());
-                    result_content.push(hexa[0].to_owned().to_string());
-                    post_id.push(c.id.to_string());
+    match vt.get_comment(resource_id, vtype).await {
+        Ok(result) => {
+            if result.data.len() >= 1 {
+                // Comment by comment
+                for c in result.data {
+                    if c.attributes.text.contains(&filter) {
+                        let split = c.attributes.text.split("\n");
+                        let collection = split.collect::<Vec<&str>>();
+                        let re = Regex::new(r"[0-9a-f]+").unwrap();
+                        for hexa in re.captures_iter(&collection[1])
+                        {
+                            trace!("Getting comment in resource: {}",resource_id);
+                            result_spoiler.push(collection[0].to_owned());
+                            result_content.push(hexa[0].to_owned().to_string());
+                            post_id.push(c.id.to_string());
+                        }
+                    }
                 }
             }
+            else {
+                error!("Cant get comments in this resource..")
+            }
+        },
+        Err(err) => {
+            error!("Cant get comments in this resource: {err}")
         }
-    }
-    else {
-        error!("Cant get comments in this resource..")
     }
 
     return (result_spoiler,result_content,post_id)
@@ -90,9 +94,15 @@ pub async fn virustotal_post_comment(
     datas: &str,
 ) {
     let vt = VtClient::new(access_token);
-    let result = vt.put_comment(resource_id, datas, vtype).await;
+    match vt.put_comment(resource_id, datas, vtype).await {
+        Ok(result) => {
+            trace!("Post answer {:?}", result.data);
+         },
+        Err(err) => { 
+            error!("Cant post comment in this resource: {err}")
+        }
+    }
     //result.data.id
-    trace!("Post answer {:?}", result.data);
 }
 
 /// DELETE comment
